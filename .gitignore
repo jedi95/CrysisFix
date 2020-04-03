@@ -1,0 +1,7 @@
+.vs/**
+CrysisLaunch/obj/**
+CrysisWarsLaunch/obj/**
+DLL/Win32/**
+DLL/x64/**
+Release/**
+Debug/**
