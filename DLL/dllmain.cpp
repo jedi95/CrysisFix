@@ -22,6 +22,25 @@ SOFTWARE.
 #include "Windows.h"
 #include "detours.h"
 
+bool checked = false;
+bool over32 = false;
+
+void check() {
+	SYSTEM_INFO sysinfo;
+	GetSystemInfo(&sysinfo);
+	int numCPU = sysinfo.dwNumberOfProcessors;
+	if (numCPU > 32) {
+		over32 = true;
+	}
+	checked = true;
+}
+
+BOOL(WINAPI* pGetProcessAffinityMask) (HANDLE, PDWORD_PTR, PDWORD_PTR) = GetProcessAffinityMask;
+
+BOOL(WINAPI* pSetProcessAffinityMask) (HANDLE, DWORD_PTR) = SetProcessAffinityMask;
+
+DWORD_PTR(WINAPI* pSetThreadAffinityMask) (HANDLE, DWORD_PTR) = SetThreadAffinityMask;
+
 LONG(WINAPI* pChange) (LPCTSTR, DEVMODE*, HWND, DWORD, LPVOID) = ChangeDisplaySettingsEx;
 
 LONG WINAPI myChange(LPCTSTR lpszDeviceName, DEVMODE* lpDevMode, HWND hwnd, DWORD dwflags, LPVOID lParam)
@@ -36,6 +55,53 @@ LONG WINAPI myChange(LPCTSTR lpszDeviceName, DEVMODE* lpDevMode, HWND hwnd, DWOR
 	return pChange(lpszDeviceName, lpDevMode, hwnd, dwflags, lParam);
 }
 
+DWORD_PTR mySetThreadAffinityMask(HANDLE hThread, DWORD_PTR dwThreadAffinityMask) {
+	if (!checked)
+	{
+		check();
+	}
+	if (over32)
+	{
+		return 0xffffffff;
+	}
+	else
+	{
+		return pSetThreadAffinityMask(hThread, dwThreadAffinityMask);
+	}
+}
+
+BOOL mySetProcessAffinityMask(HANDLE hProcess, DWORD_PTR dwProcessAffinityMask) {
+	if (!checked)
+	{
+		check();
+	}
+	if (over32)
+	{
+		return true;
+	}
+	else
+	{
+		return pSetProcessAffinityMask(hProcess, dwProcessAffinityMask);
+	}
+}
+
+BOOL myGetProcessAffinityMask(HANDLE hProcess, PDWORD_PTR lpProcessAffinityMask, PDWORD_PTR lpSystemAffinityMask) {
+	if (!checked)
+	{
+		check();
+	}
+	if (over32)
+	{
+		*lpProcessAffinityMask = 0xffffffff;
+		*lpSystemAffinityMask = 0xffffffff;
+		return true;
+	}
+	else
+	{
+		return pGetProcessAffinityMask(hProcess, lpProcessAffinityMask, lpSystemAffinityMask);
+	}
+}
+
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
 	switch (ul_reason_for_call)
@@ -45,6 +111,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
 		DetourAttach(&(PVOID&)pChange, myChange);
+		DetourAttach(&(PVOID&)pGetProcessAffinityMask, myGetProcessAffinityMask);
+		DetourAttach(&(PVOID&)pSetProcessAffinityMask, mySetProcessAffinityMask);
+		DetourAttach(&(PVOID&)pSetThreadAffinityMask, mySetThreadAffinityMask);
 		DetourTransactionCommit();
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:
