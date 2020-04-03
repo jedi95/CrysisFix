@@ -1,8 +1,7 @@
 # CrysisFix
 Fixes the refresh rate being forced to the lowest available in the DX10 version of Crysis and Crysis Wars.
-This is the DLL component of the fix. It needs to be injected into the game process before the renderer starts up in order to work.
 
-Use CrysisLaunch.exe or CrysisWarsLaunch.exe to start the game. Any arguments will be passed through to the game itself (to load mods for example)
+Use CrysisLaunch.exe or CrysisWarsLaunch.exe to start the game. Any arguments will be passed through to the game itself.
 
 Running the game in compatability mode may prevent this fix from working. I do not know why.
 
