@@ -1,7 +1,9 @@
 # CrysisFix
 
 This project is now obsolete! Please use c1-launcher for Crysis and cw-launcher for Crysis Wars instead. The fix has been integrated directly into these projects:
+
 https://github.com/ccomrade/c1-launcher
+
 https://github.com/jedi95/cw-launcher
 
 Fixes the refresh rate being forced to the lowest available in the DX10 version of Crysis and Crysis Wars.
